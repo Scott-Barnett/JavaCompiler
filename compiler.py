@@ -30,7 +30,7 @@ def get_list_of_files(filename, files):
                 new_files.append(current_dir[file_counter])
     files.extend(new_files)
     for file in new_files:
-        get_list_of_files(file, files)
+        files = get_list_of_files(file, files)
     return files
 
 for java_file in get_list_of_files(filePath, [filePath]):
