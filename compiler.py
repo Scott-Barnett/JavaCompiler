@@ -20,18 +20,18 @@ if not os.path.isfile(filePath):
     sys.exit(1)
 
 def get_list_of_files(filename, files):
-    with open(filename, 'r') as f:
-        data = f.read()
-    curdir = os.listdir('./')
-    newf = []
-    for f in range(len(curdir)):
-        if curdir[f][-4:] == "java":
-            if curdir[f] not in files and data.find(curdir[f][:-5]) != -1:
-                newf.append(curdir[f])
-    files.extend(newf)
-    for f in newf:
-        get_list_of_files(f, files)
+    with open(filename, 'r') as file:
+        file_data = file.read()
+    current_dir = os.listdir('./')
+    new_files = []
+    for file_counter in range(len(current_dir)):
+        if current_dir[file_counter][-4:] == "java":
+            if current_dir[file_counter] not in files and file_data.find(current_dir[file_counter][:-5]) != -1:
+                new_files.append(current_dir[file_counter])
+    files.extend(new_files)
+    for file in new_files:
+        get_list_of_files(file, files)
     return files
 
-for f in get_list_of_files(filePath, [filePath]):
-    subprocess.call(["javac",f])
+for java_file in get_list_of_files(filePath, [filePath]):
+    subprocess.call(["javac",java_file])
