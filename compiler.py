@@ -7,18 +7,6 @@ def show_argument_help():
 def show_invalid_file_error():
     print("The file specified does not exist")
 
-arguments = sys.argv[1:]
-
-if len(arguments) != 1:
-    show_argument_help()
-    sys.exit(1)
-
-filePath = arguments[0]
-
-if not os.path.isfile(filePath):
-    show_invalid_file_error()
-    sys.exit(1)
-
 def get_list_of_files(filename, files):
     with open(filename, 'r') as file:
         file_data = file.read()
@@ -32,6 +20,18 @@ def get_list_of_files(filename, files):
     for file in new_files:
         files = get_list_of_files(file, files)
     return files
+
+arguments = sys.argv[1:]
+
+if len(arguments) != 1:
+    show_argument_help()
+    sys.exit(1)
+
+filePath = arguments[0]
+
+if not os.path.isfile(filePath):
+    show_invalid_file_error()
+    sys.exit(1)
 
 for java_file in get_list_of_files(filePath, [filePath]):
     subprocess.call(["javac",java_file])
