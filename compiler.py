@@ -1,37 +1,72 @@
 #!/usr/bin/env python3
-import os,sys,subprocess
+import os,sys, subprocess
 
-def show_argument_help():
-    print("Usage: base.py <main java file>")
+headers = ['new','implements','inherits', 'class']
+bracket_types = {'(':')','<':'>'}
 
-def show_invalid_file_error():
-    print("The file specified does not exist")
-
-def get_list_of_files(filename, files):
-    with open(filename, 'r') as file:
-        file_data = file.read()
-    current_dir = os.listdir('./')
-    new_files = []
-    for file_counter in range(len(current_dir)):
-        if current_dir[file_counter][-4:] == "java":
-            if current_dir[file_counter] not in files and file_data.find(current_dir[file_counter][:-5]) != -1:
-                new_files.append(current_dir[file_counter])
-    files.extend(new_files)
-    for file in new_files:
-        files = get_list_of_files(file, files)
-    return files
-
-arguments = sys.argv[1:]
-
-if len(arguments) != 1:
-    show_argument_help()
+def invalid_file_argument():
+    print("Usage: ./compiler.py <java file>")
     sys.exit(1)
 
-filePath = arguments[0]
+def get_file_contents(filepath):
+    with open(filepath,'r') as open_file:
+        data = open_file.readlines()
+    for line in range(len(data)):
+        commentstart = data[line].find('//')
+        data[line] = data[line][:commentstart]
+    data = '\n'.join(data)
+    multiline_comment_start = data.find('/*')
+    while multiline_comment_start != -1:
+        comment_end = data.find('*/',multiline_comment_start) + 2
+        data = data[:multiline_comment_start] + data[comment_end:]
+        multiline_comment_start = data.find('/*',comment_end)
+    multiline_comment_start = data.find('/**')
+    while multiline_comment_start != -1:
+        comment_end = data.find('*/',multiline_comment_start) + 2
+        data = data[:multiline_comment_start] + data[comment_end:]
+        multiline_comment_start = data.find('/**',comment_end)
+    return data
 
-if not os.path.isfile(filePath):
-    show_invalid_file_error()
-    sys.exit(1)
+def get_start_pointer(data, header, end_pointer=0):
+    front_pointer = data.find(header + ' ', end_pointer)
+    return front_pointer + len(header) + 1
 
-for java_file in get_list_of_files(filePath, [filePath]):
-    subprocess.call(["javac",java_file])
+def get_end_pointer(data, front_pointer):
+    new_line = data.find('\n',front_pointer)
+    semicolon = data.find(';',front_pointer)
+    space = data.find(' ',front_pointer)
+    returnData = [new_line, semicolon, space]
+    returnData.sort()
+    return returnData[0]
+
+def remove_brackets(classname):
+    for bracket in bracket_types:
+        start_pointer = classname.find(bracket)
+        while start_pointer != -1:
+            end_pointer = len(classname) - classname[::-1].find(bracket_types[bracket])
+            classname = classname[:start_pointer] + classname[end_pointer:]
+            start_pointer = classname.find(bracket, start_pointer)
+    return classname
+
+def get_class_names(filename, classes=[]):
+    data = get_file_contents(filename)
+    for header in headers:
+        front_pointer = get_start_pointer(data, header)
+        while front_pointer != (-1 + len(header) + 1):
+            end_pointer = get_end_pointer(data, front_pointer)
+            classname = remove_brackets(data[front_pointer:end_pointer])
+            if classname not in classes and os.path.isfile(classname + '.java'):
+                classes.append(classname)
+                get_class_names(classname + '.java', classes)
+            front_pointer = get_start_pointer(data, header, end_pointer)
+    return classes
+
+if __name__ == '__main__':
+    if len(sys.argv) != 2 or not os.path.isfile(sys.argv[1]):
+        invalid_file_argument()
+
+    local_classes = get_class_names(sys.argv[1])
+    for local_class in local_classes:
+        print("Compiling {}".format(local_class))
+        subprocess.call(['javac',local_class + '.java'])
+    print("All local java files compiled")
